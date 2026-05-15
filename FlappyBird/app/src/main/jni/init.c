@@ -148,6 +148,7 @@ void Init(struct android_app* app)
 
     // Create shader program
     textureProgram = createProgram(vertexShaderTexture, fragmentShaderTexture);
+    InitTextureQuadBuffers();
 
     colorProgram = createProgram(vertexShaderColor, fragmentShaderColor);
     gPositionHandle = glGetAttribLocation(colorProgram, "a_Position");
@@ -179,6 +180,21 @@ void Shutdown()
     if (!g_Initialized)
         return;
 
+    EGLBoolean ctxOk = EGL_FALSE;
+    if (g_EglDisplay != EGL_NO_DISPLAY && g_EglSurface != EGL_NO_SURFACE && g_EglContext != EGL_NO_CONTEXT)
+        ctxOk = eglMakeCurrent(g_EglDisplay, g_EglSurface, g_EglSurface, g_EglContext);
+
+    if (ctxOk == EGL_TRUE)
+        ShutdownTextureQuadBuffers();
+
+    ShutdownGame();
+
+    if (ctxOk == EGL_TRUE)
+    {
+        glDeleteProgram(textureProgram);
+        glDeleteProgram(colorProgram);
+    }
+
     // Cleanup
     if (g_EglDisplay != EGL_NO_DISPLAY)
     {
@@ -197,10 +213,6 @@ void Shutdown()
     g_EglContext = EGL_NO_CONTEXT;
     g_EglSurface = EGL_NO_SURFACE;
     ANativeWindow_release(g_App->window);
-
-    ShutdownGame();
-    glDeleteProgram(textureProgram);
-    glDeleteProgram(colorProgram);
 
     g_Initialized = false;
 }

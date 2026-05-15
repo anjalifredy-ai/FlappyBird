@@ -7,6 +7,47 @@
 #include "init.h"
 #include <math.h>
 
+static GLuint g_textureQuadVbo;
+static GLuint g_textureQuadEbo;
+static GLint g_texPositionAttrib;
+static GLint g_texTexCoordAttrib;
+static GLint g_texSamplerUniform;
+
+void InitTextureQuadBuffers(void)
+{
+    g_texPositionAttrib = glGetAttribLocation(textureProgram, "aPosition");
+    g_texTexCoordAttrib = glGetAttribLocation(textureProgram, "aTexCoord");
+    g_texSamplerUniform = glGetUniformLocation(textureProgram, "uTexture");
+
+    if (g_textureQuadVbo != 0)
+        return;
+
+    glGenBuffers(1, &g_textureQuadVbo);
+    glGenBuffers(1, &g_textureQuadEbo);
+
+    GLuint indices[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_textureQuadEbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void ShutdownTextureQuadBuffers(void)
+{
+    if (g_textureQuadVbo != 0)
+    {
+        glDeleteBuffers(1, &g_textureQuadVbo);
+        g_textureQuadVbo = 0;
+    }
+    if (g_textureQuadEbo != 0)
+    {
+        glDeleteBuffers(1, &g_textureQuadEbo);
+        g_textureQuadEbo = 0;
+    }
+}
+
 GLuint LoadTexture(const char* assetPath)
 {
     AAsset* file = AAssetManager_open(g_App->activity->assetManager, assetPath, AASSET_MODE_BUFFER);
@@ -87,45 +128,30 @@ void RenderTexture(GLuint texture, float x, float y, float width, float height)
         normalized_x, normalized_y - normalized_height, 0.0f, 1.0f
     };
 
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
+    glBindBuffer(GL_ARRAY_BUFFER, g_textureQuadVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
 
-    GLuint vbo, ebo;
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_textureQuadEbo);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(g_texPositionAttrib);
+    glVertexAttribPointer(g_texPositionAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    GLint positionAttrib = glGetAttribLocation(textureProgram, "aPosition");
-    glEnableVertexAttribArray(positionAttrib);
-    glVertexAttribPointer(positionAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
-
-    GLint texCoordAttrib = glGetAttribLocation(textureProgram, "aTexCoord");
-    glEnableVertexAttribArray(texCoordAttrib);
-    glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(g_texTexCoordAttrib);
+    glVertexAttribPointer(g_texTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glUniform1i(glGetUniformLocation(textureProgram, "uTexture"), 0);
+    glUniform1i(g_texSamplerUniform, 0);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void RenderTexturePro(GLuint texture, float x, float y, float width, float height, float angle)
 {
     glUseProgram(textureProgram);
-
-    // calculate aspect ratio
-    float aspect_ratio = (float)WindowSizeX / (float)WindowSizeY;
 
     // convert angle to radians
     float angle_rad = angle * M_PI / 180.0f;
@@ -168,37 +194,25 @@ void RenderTexturePro(GLuint texture, float x, float y, float width, float heigh
         vertices[i * 4 + 1] = 1.0f - (2.0f * vertices[i * 4 + 1] / WindowSizeY);
     }
 
-    GLuint indices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
+    glBindBuffer(GL_ARRAY_BUFFER, g_textureQuadVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
 
-    GLuint vbo, ebo;
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_textureQuadEbo);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(g_texPositionAttrib);
+    glVertexAttribPointer(g_texPositionAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    GLint positionAttrib = glGetAttribLocation(textureProgram, "aPosition");
-    glEnableVertexAttribArray(positionAttrib);
-    glVertexAttribPointer(positionAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)0);
-
-    GLint texCoordAttrib = glGetAttribLocation(textureProgram, "aTexCoord");
-    glEnableVertexAttribArray(texCoordAttrib);
-    glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(g_texTexCoordAttrib);
+    glVertexAttribPointer(g_texTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glUniform1i(glGetUniformLocation(textureProgram, "uTexture"), 0);
+    glUniform1i(g_texSamplerUniform, 0);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void CreateBox(uint32_t color, float posX, float posY, float width, float height)

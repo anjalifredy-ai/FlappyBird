@@ -4,6 +4,8 @@
 #define M_PI 3.14159265358979323846f
 
 GLuint LoadTexture(const char* assetPath);
+void InitTextureQuadBuffers(void);
+void ShutdownTextureQuadBuffers(void);
 void RenderTexture(GLuint texture, float x, float y, float width, float height);
 void RenderTexturePro(GLuint texture, float x, float y, float width, float height, float angle);
 
