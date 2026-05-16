@@ -11,6 +11,8 @@
 #include <math.h>
 #include <string.h>
 
+extern float DeltaTime;
+
 #define SIZE_SPACE_PIPE 3.3f
 
 #define SPACE_BETWEEN_PIPES 5
@@ -68,13 +70,13 @@ GLuint t_yellowbird_midflap;
 GLuint t_yellowbird_upflap;
 
 // data
-int offsetBase = 0;
+float offsetBase = 0.0f;
 int gameSpeed = 0;
 int score = 0;
 int bestScore = 0;
 bool newBestScore = false;
 
-int alpha = 0;
+float alpha = 0.0f;
 bool fadeOut = false;
 
 enum GameState {
@@ -131,7 +133,7 @@ GLuint curTextureAnimBirdForLogo;
 GLuint birdTexturesForLogo[3];
 int currentFrameForLogo = 0;
 
-int fadeOutAlpha = 255;
+float fadeOutAlpha = 255.0f;
 float panelY = 0;
 GLuint medalTexture = 0;
 
@@ -326,11 +328,12 @@ void AnimateBird()
 
 void ApplyGravity()
 {
-    bird.velocity += 0.65f;
-    bird.y += bird.velocity;
+    float dt = DeltaTime * 60.0f;
+    bird.velocity += 0.65f * dt;
+    bird.y += bird.velocity * dt;
 
     float targetAngle = bird.velocity > 0 ? 90.0f : -30.0f;
-    bird.angle = MoveTowards(bird.angle, targetAngle, 2.0f);
+    bird.angle = MoveTowards(bird.angle, targetAngle, 2.0f * dt);
 
     if (bird.angle > 90.0f) bird.angle = 90.0f;
 }
@@ -534,13 +537,15 @@ void RenderSmallScoreRight(int score, float x, float y, float digitWidth, float 
 
 void Render()
 {
+    float dt = DeltaTime * 60.0f;
+
     //background
     RenderTexture(t_background_day, 0, 0, ScaleX(100.f), ScaleY(95.83f));
 
     //cycle base texture
     if (currentState != STOP_GAME && currentState != FADE_OUT_GAMEOVER && currentState != FALL_BIRD && currentState != FADE_IN_PANEL)
     {
-        offsetBase -= gameSpeed;
+        offsetBase -= gameSpeed * dt;
     }
 
     RenderTexture(t_base, offsetBase, ScaleY(75.f), ScaleX(100.f), ScaleY(25.f));
@@ -552,11 +557,11 @@ void Render()
 
     if (offsetBase <= -ScaleX(100.f))
     {
-        offsetBase = 0;
+        offsetBase = 0.0f;
     }
 
-    logoY += logoVelocity;
-    birdY += birdVelocity;
+    logoY += logoVelocity * dt;
+    birdY += birdVelocity * dt;
 
     if (logoY > ScaleY(20.83f) + 25 || logoY < ScaleY(20.83f) - 25) {
         logoVelocity = -logoVelocity;
@@ -605,7 +610,7 @@ void Render()
 
         for (int i = 0; i < 2; i++)
         {
-            pipes[i].x -= gameSpeed;
+            pipes[i].x -= gameSpeed * dt;
             if (pipes[i].x < -ScaleX(15.f))
             {
                 pipes[i].x = ScaleX(115.f);
@@ -613,7 +618,7 @@ void Render()
             }
 
             if (bird.x + (bird.width / 2) >= pipes[i].x + pipes[i].w &&
-                bird.x + (bird.width / 2) <= pipes[i].x + pipes[i].w + gameSpeed)
+                bird.x + (bird.width / 2) <= pipes[i].x + pipes[i].w + gameSpeed * dt)
             {
                 score++;
                 PlayAudio("audio/point.mp3");
@@ -659,10 +664,10 @@ void Render()
     }
     else if (currentState == FADE_OUT_GAMEOVER)
     {
-        fadeOutAlpha -= 5;
+        fadeOutAlpha -= 5.0f * dt;
         if (fadeOutAlpha <= 0)
         {
-            fadeOutAlpha = 0;
+            fadeOutAlpha = 0.0f;
             currentState = FALL_BIRD;
             PlayAudio("audio/die.mp3");
         }
@@ -670,7 +675,7 @@ void Render()
         RenderPipes();
         RenderBird();
 
-        uint32_t color = 0x00FFFFFF | (fadeOutAlpha << 24);
+        uint32_t color = 0x00FFFFFF | ((uint32_t)(int)fadeOutAlpha << 24);
         CreateBox(color, 0, 0, ScaleX(100.f), ScaleY(100.f));
     }
     else if (currentState == FALL_BIRD)
@@ -690,7 +695,7 @@ void Render()
         RenderPipes();
         RenderBird();
 
-        panelY = MoveTowards(panelY, ScaleY(30), 20.0f);
+        panelY = MoveTowards(panelY, ScaleY(30), 20.0f * dt);
         RenderTexture(t_panel, ScaleX(15.f), panelY, ScaleX(70.f), ScaleY(17.5f));
 
         // Render default score
@@ -754,7 +759,7 @@ void Render()
 
             panelY = ScaleY(100);
 
-            fadeOutAlpha = 255;
+            fadeOutAlpha = 255.0f;
 
             newBestScore = false;
         }
@@ -769,19 +774,19 @@ void Render()
 
     if (currentState == FADE_IN)
     {
-        alpha += 5;
+        alpha += 5.0f * dt;
         if (alpha >= 255)
         {
-            alpha = 255;
+            alpha = 255.0f;
             currentState = FADE_OUT;
         }
     }
     else if (currentState == FADE_OUT)
     {
-        alpha -= 5;
+        alpha -= 5.0f * dt;
         if (alpha <= 0)
         {
-            alpha = 0;
+            alpha = 0.0f;
             currentState = READY_GAME;
         }
     }
@@ -789,7 +794,7 @@ void Render()
     // render black screen
     if (currentState == FADE_IN || currentState == FADE_OUT)
     {
-        uint32_t color = 0x00000000 | (alpha << 24);
+        uint32_t color = 0x00000000 | ((uint32_t)(int)alpha << 24);
         CreateBox(color, 0, 0, ScaleX(100), ScaleY(100));
     }
 }

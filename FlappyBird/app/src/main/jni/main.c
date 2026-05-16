@@ -7,10 +7,6 @@
 #include <unistd.h>
 
 
-#define TARGET_FPS 60
-#define TARGET_FRAME_TIME (1.0f / TARGET_FPS)
-
-double g_Time = 0.0;
 float DeltaTime = 0.0f;
 double g_LastFrameTime = 0.0;
 
@@ -21,7 +17,6 @@ static void resetFrameClockAfterResume(void)
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     double t = (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
-    g_Time = t;
     g_LastFrameTime = t;
 }
 
@@ -142,22 +137,13 @@ void android_main(struct android_app* state)
                 clock_gettime(CLOCK_MONOTONIC, &current_timespec);
                 double current_time = (double)(current_timespec.tv_sec) + (current_timespec.tv_nsec / 1000000000.0);
 
-                // calc delta time
-                DeltaTime = g_Time > 0.0 ? (float)(current_time - g_Time) : (float)TARGET_FRAME_TIME;
+                DeltaTime = g_LastFrameTime > 0.0 ? (float)(current_time - g_LastFrameTime) : (1.0f / 60.0f);
+                if (DeltaTime > 0.05f) DeltaTime = 0.05f;
 
-                // checking if enough time has passed for a new frame
-                if (current_time - g_LastFrameTime >= TARGET_FRAME_TIME)
-                {
-                    MainLoopStep();
-                    MouseReset(&mouse);
+                MainLoopStep();
+                MouseReset(&mouse);
 
-                    // update time last frame
-                    g_LastFrameTime = current_time;
-                }
-
-                g_Time = current_time;
-
-                usleep(1000);
+                g_LastFrameTime = current_time;
             }
             else
             {

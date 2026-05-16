@@ -138,6 +138,8 @@ void Init(struct android_app* app)
         goto fail_destroy_surface;
     }
 
+    eglSwapInterval(g_EglDisplay, 1);
+
     // Set window size
     WindowSizeX = ANativeWindow_getWidth(g_App->window);
     WindowSizeY = ANativeWindow_getHeight(g_App->window);
