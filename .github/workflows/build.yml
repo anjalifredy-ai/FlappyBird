@@ -24,6 +24,9 @@ jobs:
       - name: Install NDK
         run: sdkmanager --install "ndk;25.2.9519653"
 
+      - name: Install Android platform
+        run: sdkmanager "platforms;android-30" "build-tools;30.0.3"
+
       - name: Build native code
         run: |
           cd FlappyBird/app/src/main
@@ -32,15 +35,14 @@ jobs:
       - name: Build APK with aapt
         run: |
           cd FlappyBird
-          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | tail -1)
-          $ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt package -f \
+          $ANDROID_HOME/build-tools/30.0.3/aapt package -f \
             -M app/src/main/AndroidManifest.xml \
             -S app/src/main/res \
             -A app/src/main/assets \
             -I $ANDROID_HOME/platforms/android-30/android.jar \
             -F app/build/outputs/apk/unaligned.apk
           mkdir -p app/build/outputs/apk
-          $ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign -f 4 \
+          $ANDROID_HOME/build-tools/30.0.3/zipalign -f 4 \
             app/build/outputs/apk/unaligned.apk \
             app/build/outputs/apk/FlappyBird.apk
 
