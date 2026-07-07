@@ -35,13 +35,13 @@ jobs:
       - name: Build APK with aapt
         run: |
           cd FlappyBird
+          mkdir -p app/build/outputs/apk
           $ANDROID_HOME/build-tools/30.0.3/aapt package -f \
             -M app/src/main/AndroidManifest.xml \
             -S app/src/main/res \
             -A app/src/main/assets \
             -I $ANDROID_HOME/platforms/android-30/android.jar \
             -F app/build/outputs/apk/unaligned.apk
-          mkdir -p app/build/outputs/apk
           $ANDROID_HOME/build-tools/30.0.3/zipalign -f 4 \
             app/build/outputs/apk/unaligned.apk \
             app/build/outputs/apk/FlappyBird.apk
