@@ -44,7 +44,27 @@ jobs:
             -F app/build/outputs/apk/unaligned.apk
           $ANDROID_HOME/build-tools/30.0.3/zipalign -f 4 \
             app/build/outputs/apk/unaligned.apk \
-            app/build/outputs/apk/FlappyBird.apk
+            app/build/outputs/apk/aligned.apk
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Sign APK
+        run: |
+          cd FlappyBird
+          $ANDROID_HOME/build-tools/30.0.3/apksigner sign \
+            --ks ../debug.keystore \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out app/build/outputs/apk/FlappyBird.apk \
+            app/build/outputs/apk/aligned.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
