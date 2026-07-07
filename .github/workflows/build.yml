@@ -1,0 +1,51 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;25.2.9519653"
+
+      - name: Build native code
+        run: |
+          cd FlappyBird/app/src/main
+          $ANDROID_HOME/ndk/25.2.9519653/ndk-build
+
+      - name: Build APK with aapt
+        run: |
+          cd FlappyBird
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | tail -1)
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt package -f \
+            -M app/src/main/AndroidManifest.xml \
+            -S app/src/main/res \
+            -A app/src/main/assets \
+            -I $ANDROID_HOME/platforms/android-30/android.jar \
+            -F app/build/outputs/apk/unaligned.apk
+          mkdir -p app/build/outputs/apk
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign -f 4 \
+            app/build/outputs/apk/unaligned.apk \
+            app/build/outputs/apk/FlappyBird.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlappyBird-APK
+          path: FlappyBird/app/build/outputs/apk/FlappyBird.apk
